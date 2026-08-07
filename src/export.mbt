@@ -1,10 +1,11 @@
+///|
 /// Exports the graph to Graphviz DOT format.
 /// Nodes are labeled with their weights converted to string via a custom label function.
 /// Edges are labeled with their weights via a custom edge label function.
 pub fn[N, E] Graph::to_dot(
   self : Graph[N, E],
   node_label : (N) -> String,
-  edge_label : (E) -> String
+  edge_label : (E) -> String,
 ) -> String {
   let mut dot = ""
   if self.is_directed {
@@ -28,14 +29,14 @@ pub fn[N, E] Graph::to_dot(
         Some(edge_idx) => {
           let edge = self.edges[edge_idx.val]
           let target = edge.target_node.val
-          
+
           // For undirected graphs, we only print each undirected edge once
           if self.is_directed || i <= target {
             let label = edge_label(edge.weight)
             let op = if self.is_directed { "->" } else { "--" }
             dot = dot + "  \{i} \{op} \{target} [label=\"\{label}\"];\n"
           }
-          
+
           curr_edge = edge.next_outgoing_edge
         }
       }

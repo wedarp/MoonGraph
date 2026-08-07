@@ -1,3 +1,4 @@
+///|
 priv struct TarjanState {
   mut index : Int
   indices : Array[Int]
@@ -7,7 +8,7 @@ priv struct TarjanState {
   sccs : Array[Array[NodeIndex]]
 }
 
-
+///|
 /// Tarjan's Strongly Connected Components (SCC) algorithm.
 /// Returns an array of SCCs, where each SCC is an array of `NodeIndex`.
 pub fn[N, E] Graph::tarjan_scc(self : Graph[N, E]) -> Array[Array[NodeIndex]] {
@@ -30,10 +31,11 @@ pub fn[N, E] Graph::tarjan_scc(self : Graph[N, E]) -> Array[Array[NodeIndex]] {
   state.sccs
 }
 
+///|
 fn[N, E] Graph::strongconnect(
   self : Graph[N, E],
   v : NodeIndex,
-  state : TarjanState
+  state : TarjanState,
 ) -> Unit {
   state.indices[v.val] = state.index
   state.lowlink[v.val] = state.index

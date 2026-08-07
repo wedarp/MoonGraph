@@ -1,0 +1,13 @@
+name = "wedarp/moongraph"
+
+version = "0.1.0"
+
+readme = "README.md"
+
+license = "MIT"
+
+repository = "https://github.com/wedarp/MoonGraph"
+
+description = "Pure MoonBit generic graph data structures and algorithms"
+
+keywords = [ "graph", "algorithms", "moonbit", "pathfinding" ]

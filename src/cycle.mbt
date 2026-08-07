@@ -1,3 +1,4 @@
+///|
 /// Checks if the graph contains any cycle.
 /// Works for both directed and undirected graphs.
 pub fn[N, E] Graph::has_cycle(self : Graph[N, E]) -> Bool {
@@ -25,10 +26,11 @@ pub fn[N, E] Graph::has_cycle(self : Graph[N, E]) -> Bool {
   }
 }
 
+///|
 fn[N, E] Graph::dfs_has_cycle_directed(
   self : Graph[N, E],
   u : NodeIndex,
-  visited : Array[Int]
+  visited : Array[Int],
 ) -> Bool {
   visited[u.val] = 1 // visiting
   let nbrs = self.neighbors(u)
@@ -47,11 +49,12 @@ fn[N, E] Graph::dfs_has_cycle_directed(
   false
 }
 
+///|
 fn[N, E] Graph::dfs_has_cycle_undirected(
   self : Graph[N, E],
   u : NodeIndex,
   parent : NodeIndex?,
-  visited : Array[Bool]
+  visited : Array[Bool],
 ) -> Bool {
   visited[u.val] = true
   let nbrs = self.neighbors(u)
@@ -64,11 +67,7 @@ fn[N, E] Graph::dfs_has_cycle_undirected(
     } else {
       match parent {
         None => ()
-        Some(p) => {
-          if v.val != p.val {
-            return true
-          }
-        }
+        Some(p) => if v.val != p.val { return true }
       }
     }
   }

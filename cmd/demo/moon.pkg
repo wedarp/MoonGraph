@@ -1,0 +1,5 @@
+import {
+  "wedarp/moongraph/src" @moongraph,
+}
+
+pkgtype(kind: "executable")

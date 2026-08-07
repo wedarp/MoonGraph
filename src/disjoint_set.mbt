@@ -1,9 +1,11 @@
+///|
 /// Disjoint Set (Union-Find) data structure
 pub struct DisjointSet {
   parent : Array[Int]
   rank : Array[Int]
 }
 
+///|
 /// Creates a new DisjointSet with `size` elements (0 to size-1).
 pub fn DisjointSet::new(size : Int) -> DisjointSet {
   let parent = Array::make(size, 0)
@@ -14,6 +16,7 @@ pub fn DisjointSet::new(size : Int) -> DisjointSet {
   { parent, rank }
 }
 
+///|
 /// Finds the representative of the set that contains `i`.
 /// Uses path compression.
 pub fn DisjointSet::find(self : DisjointSet, i : Int) -> Int {
@@ -26,6 +29,7 @@ pub fn DisjointSet::find(self : DisjointSet, i : Int) -> Int {
   }
 }
 
+///|
 /// Unions the sets that contain `i` and `j`.
 /// Returns `true` if they were in different sets and merged, `false` otherwise.
 /// Uses union by rank.
@@ -46,4 +50,3 @@ pub fn DisjointSet::union(self : DisjointSet, i : Int, j : Int) -> Bool {
     false
   }
 }
-

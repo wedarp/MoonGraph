@@ -1,5 +1,6 @@
 .moon/
 target/
 _build/
+*.mbti
 *.DS_Store
 
