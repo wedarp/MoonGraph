@@ -763,3 +763,93 @@ test "deterministic walk sampling stays within graph and counts visits" {
   assert_eq(trace.return_probability_scaled() >= 0, true)
   assert_eq(g.random_walk(NodeIndex::new(99), 5, 1).length(), 0)
 }
+
+///|
+test "adjacency matrix and csr compression preserve topology" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let c = g.add_node("c")
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(a, c, 2)
+  let _ = g.add_edge(c, b, 3)
+  let matrix = g.adjacency_matrix()
+  assert_eq(matrix.length(), 9)
+  assert_eq(matrix[a.value() * 3 + b.value()], 1)
+  assert_eq(matrix[b.value() * 3 + a.value()], 0)
+  let csr = g.to_csr()
+  assert_eq(csr.row_count(), 3)
+  assert_eq(csr.edge_count(), 3)
+  assert_eq(csr.row_degree(a.value()), 2)
+  assert_eq(csr.max_row_degree(), 2)
+  assert_eq(csr.contains_edge(a.value(), b.value()), true)
+  assert_eq(csr.contains_edge(99, b.value()), false)
+  assert_eq(csr.neighbors(a.value()).length(), 2)
+  assert_eq(csr.neighbors(99).length(), 0)
+  assert_eq(g.adjacency_matrix_size(), 9)
+}
+
+///|
+test "shortest path counts and eccentricities handle a diamond" {
+  let g : Graph[Int, Int] = Graph::new(directed=true)
+  let s = g.add_node(0)
+  let a = g.add_node(1)
+  let b = g.add_node(2)
+  let t = g.add_node(3)
+  let _ = g.add_edge(s, a, 1)
+  let _ = g.add_edge(s, b, 1)
+  let _ = g.add_edge(a, t, 1)
+  let _ = g.add_edge(b, t, 1)
+  let counts = g.shortest_path_counts(s)
+  assert_eq(counts[s.value()], 1)
+  assert_eq(counts[a.value()], 1)
+  assert_eq(counts[b.value()], 1)
+  assert_eq(counts[t.value()], 2)
+  let eccentricities = g.eccentricities()
+  assert_eq(eccentricities[s.value()], 2)
+  assert_eq(eccentricities[t.value()], 0)
+  assert_eq(g.shortest_path_counts(NodeIndex::new(99)).length(), 4)
+}
+
+///|
+test "centrality and degree sequence expose useful graph summaries" {
+  let g : Graph[Int, Int] = Graph::new(directed=false)
+  let a = g.add_node(0)
+  let b = g.add_node(1)
+  let c = g.add_node(2)
+  let d = g.add_node(3)
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(a, c, 1)
+  let _ = g.add_edge(a, d, 1)
+  let degrees = g.degree_sequence()
+  assert_eq(degrees[0], 3)
+  assert_eq(degrees[3], 1)
+  let closeness = g.closeness_centrality_scaled()
+  assert_true(closeness[a.value()] > closeness[b.value()])
+  assert_eq(g.closeness_centrality(NodeIndex::new(99)), 0)
+  assert_eq(g.degree_sum(), 6)
+  assert_eq(g.is_regular(), false)
+  assert_eq(g.finite_reachability_counts()[a.value()], 4)
+  assert_eq(g.has_edge_between_sets([a], [b]), true)
+  assert_eq(g.edge_boundary_count([b], [a]), 1)
+}
+
+///|
+test "edge boundary filters direction and reports invalid masks" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let c = g.add_node("c")
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(c, a, 1)
+  let boundary = g.edge_boundary([a], [b, c])
+  assert_eq(boundary.length(), 1)
+  assert_eq(boundary[0].0.value(), a.value())
+  assert_eq(boundary[0].1.value(), b.value())
+  assert_true(g.edge_boundary([a], [a]).length() == 0)
+  match g.adjacency_matrix_checked([true, false]) {
+    Ok(_) => assert_true(false)
+    Err(_) => assert_true(true)
+  }
+}

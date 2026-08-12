@@ -87,7 +87,7 @@ On a machine without a native C compiler, the WebAssembly target is sufficient f
     moon test --target wasm-gc --deny-warn
     moon run cmd/demo --target wasm-gc
 
-The acceptance revision contains 38 automated tests across the core data structure, algorithm, scheduling, routing, and sampling modules. The current checkout measures 36 MoonBit source files and 3,870 lines including tests, with 3,174 production lines; generated _build and .mbti files are ignored.
+The acceptance revision contains 42 automated tests across the core data structure, algorithm, scheduling, routing, sampling, centrality, and compressed-storage modules. The current checkout measures 38 MoonBit source files and 4,305 lines including tests, with 3,523 production lines; generated _build and .mbti files are ignored.
 
 ## Reproducible benchmark data
 
@@ -105,7 +105,7 @@ The suite uses a checked-in copy of the standard Zachary Karate Club network, a 
 
 The Karate Club edge list is in [bench/data/karate_club_edges.csv](bench/data/karate_club_edges.csv), with provenance and the upstream NetworkX/Zachary references in [bench/data/README.md](bench/data/README.md). The benchmark embeds its inputs so that the wasm command is reproducible without downloading data.
 
-Boundary tests cover empty graphs, isolated nodes, invalid indices, self-loops, parallel edges, disconnected graphs and forests, negative capacities and task durations, missing dependencies, cycles, unreachable nodes, saturated path counts, zero and negative walk lengths, deterministic routing, multi-source BFS, and k-hop limits.
+Boundary tests cover empty graphs, isolated nodes, invalid indices, self-loops, parallel edges, disconnected graphs and forests, negative capacities and task durations, missing dependencies, cycles, unreachable nodes, saturated path counts, zero and negative walk lengths, deterministic routing, multi-source BFS, k-hop limits, invalid CSR rows, mask length errors, and centrality on disconnected graphs.
 
 ## Repository and provenance
 
@@ -133,7 +133,8 @@ Keep public APIs documented, add a regression test for every behavior change, ru
 - Added a standalone cmd/demo package and reproducible validation commands.
 - Added compiler-pipeline dependency planning with makespan and critical-path reporting.
 - Added PageRank, triangles, k-core, graph metrics, SCC condensation, min-cut, routing tables, widest paths, multi-source BFS, k-hop neighborhoods, and deterministic random walks.
-- Added the checked-in Karate Club benchmark, generated sparse-network baseline, cmd/benchmark, and 38 regression tests for boundary behavior.
+- Added CSR compression, adjacency matrices, shortest-path counts, eccentricity, closeness centrality, degree summaries, and edge-boundary queries.
+- Added the checked-in Karate Club benchmark, generated sparse-network baseline, cmd/benchmark, and 42 regression tests for boundary behavior.
 
 ## License
 
