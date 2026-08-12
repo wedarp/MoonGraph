@@ -72,8 +72,14 @@ jobs:
       - name: Check all targets
         run: moon check --target all --deny-warn
 
+      - name: Build all targets
+        run: moon build --target all --deny-warn
+
       - name: Test all targets
         run: moon test --target all --deny-warn
+
+      - name: Run reproducible benchmark
+        run: moon run cmd/benchmark --target wasm-gc
 
       - name: Verify formatting and generated interfaces
         shell: bash

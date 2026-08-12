@@ -29,39 +29,47 @@
   </div>
 
   <h2>项目定位</h2>
-  <p>MoonGraph 为 MoonBit 生态提供可复用的泛型 Graph[N, E] 邻接表、节点/边安全检查、遍历、路径规划、连通性分析、依赖调度、网络流、匹配和 Graphviz DOT 导出能力。适用场景包括编译器依赖解析、构建系统、网络拓扑、路径规划、课程实验和图数据分析。</p>
+  <p>MoonGraph 为 MoonBit 生态提供可复用的泛型 Graph[N, E] 邻接表、节点与边安全检查、遍历、路径规划、连通性分析、依赖调度、网络流、匹配、路由、采样和 Graphviz DOT 导出能力。适用场景包括编译器依赖解析、构建系统、网络拓扑、路径规划、课程实验和图数据分析。</p>
 
   <h2>本次验收版本的功能范围</h2>
   <ul>
-    <li>基础结构：有向图/无向图、泛型节点与边权重、节点与边索引、度数和邻接查询。</li>
-    <li>遍历与结构分析：BFS、DFS、环检测、Tarjan SCC、弱连通分量、传递闭包、割点、桥、贪心着色。</li>
-    <li>路径与调度：Dijkstra、A*、Bellman–Ford、可重建最短路径、Floyd–Warshall、拓扑排序、拓扑分层、DAG 最长路。</li>
-    <li>网络算法：Kruskal/Prim 最小生成树或森林、Edmonds–Karp 最大流、二分图最大匹配、Euler 路径。</li>
-    <li>工程支持：PriorityQueue、DisjointSet、Graphviz DOT 导出、独立 cmd/demo 示例和跨平台 CI。</li>
+    <li>基础结构：有向图/无向图、泛型节点与边权重、节点与边索引、度数、邻接查询、空图与非法索引处理。</li>
+    <li>遍历与结构分析：BFS、DFS、环检测、Tarjan SCC、弱连通分量、传递闭包、SCC condensation、树/森林检查、传递约简。</li>
+    <li>路径与调度：Dijkstra、A*、Bellman-Ford、Floyd-Warshall、可重建最短路径、拓扑排序、拓扑分层、DAG 最长路、编译器任务依赖调度。</li>
+    <li>网络算法：Kruskal/Prim 最小生成树或森林、Edmonds-Karp 最大流与最小割、二分图最大匹配、Euler 路径。</li>
+    <li>图分析：PageRank、三角形、局部聚类系数、k-core、中心性、互惠率、直径、平均距离、度分布。</li>
+    <li>工程支持：诱导子图、转置图、边列表导出、路由表、最大容量路径、多源 BFS、k-hop 邻域、确定性随机游走、独立 demo 与 benchmark、跨平台 CI。</li>
   </ul>
 
-  <h2>可复现验证</h2>
+  <h2>可复现验收命令</h2>
   <pre>moon version --all
-moon fmt
+moon update
+moon fmt --check
 moon check --target all --deny-warn
+moon build --target all --deny-warn
 moon test --target all --deny-warn
+moon run cmd/benchmark --target wasm-gc
 moon info
 moon run cmd/demo --target wasm-gc</pre>
-  <p>验收版本实测包含 23 个 MoonBit 源文件、1,964 行代码（含测试）和 22 个自动化测试。CI 使用官方 latest 稳定工具链（本次验收时为 MoonBit 0.10.4），在 Ubuntu、macOS、Windows 三个平台执行检查与测试。</p>
+  <p>基准程序包含标准 Zachary Karate Club 图、12 任务编译流水线和 500 节点稀疏网络。输入数据及来源说明位于 bench/data；benchmark 将输入嵌入程序，wasm 环境无需联网即可复现。</p>
+
+  <h2>规模、测试与边界覆盖</h2>
+  <p>当前版本包含 36 个 MoonBit 源文件、3,870 行代码（含测试，其中生产代码 3,174 行）和 38 个自动化测试。测试覆盖空图、孤立点、非法索引、自环、平行边、非连通图、森林、负容量、负任务时长、缺失依赖、环依赖、不可达节点、路径计数饱和、零/负游走长度、确定性路由、多源 BFS 和 k-hop 边界。</p>
+  <p>三组基准的回归锚点为：Karate Club 34 个节点、78 条无向边、45 个三角形、直径 5、平均距离 2.408199；编译流水线 makespan 45、关键路径长度 11；稀疏网络 500 个节点、600 条有向边、从 0 可达 500 个节点、直径 84、到 499 的距离 67。</p>
 
   <h2>安装与调用</h2>
   <pre>moon add wedarp/moongraph</pre>
-  <p>库包路径为 <code>wedarp/moongraph/src</code>。仓库中的 <code>cmd/demo</code> 可独立运行，展示图构建、BFS、Dijkstra、拓扑排序和 DOT 输出。</p>
+  <p>库包路径为 <code>wedarp/moongraph/src</code>。仓库中的 <code>cmd/demo</code> 展示图构建、BFS、Dijkstra、拓扑排序和 DOT 输出；<code>cmd/benchmark</code> 展示真实基准数据、依赖调度和可重复测量。</p>
 
-  <h2>开源与参考范围</h2>
+  <h2>开源合规与来源</h2>
   <ul>
     <li><a href="https://github.com/wedarp/MoonGraph">GitHub 仓库</a></li>
     <li><a href="https://www.gitlink.org.cn/Qqwkkr/MoonGraph">GitLink 仓库</a></li>
     <li><a href="https://mooncakes.io/">Mooncakes</a></li>
     <li><a href="https://moonbitlang.github.io/OSC2026/">OSC2026 官方页面</a></li>
-    <li><a href="https://github.com/petgraph/petgraph">petgraph 完整源码</a>（<a href="https://github.com/petgraph/petgraph/blob/master/LICENSE-MIT">MIT</a> / <a href="https://github.com/petgraph/petgraph/blob/master/LICENSE-APACHE">Apache-2.0</a>）</li>
-    <li><a href="LICENSE">MIT License</a></li>
+    <li><a href="https://github.com/petgraph/petgraph">petgraph 完整源码</a>，其 <a href="https://github.com/petgraph/petgraph/blob/master/LICENSE-MIT">MIT</a> / <a href="https://github.com/petgraph/petgraph/blob/master/LICENSE-APACHE">Apache-2.0</a> 许可证</li>
+    <li><a href="LICENSE">本项目 MIT License</a></li>
   </ul>
-  <p>本项目参考 petgraph 的生态定位、图算法术语和功能范围，不复制其源代码；所有实现均以 MoonBit 原生代码完成。本项目自身使用 MIT License，petgraph 仍遵循其上游 MIT/Apache-2.0 双许可证。</p>
+  <p>本项目仅参考 petgraph 的生态定位、图算法术语和功能范围，不复制其源代码；所有实现均为独立 MoonBit 源码。仓库根目录 LICENSE 明确授予 MIT 权利，基准数据文件保留来源、数据格式和上游参考链接。提交历史保持作者本人作为唯一贡献者的归属。</p>
 </body>
 </html>

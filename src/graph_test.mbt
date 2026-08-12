@@ -232,8 +232,8 @@ test "public graph inspection and invalid edges are safe" {
   assert_eq(g.contains_edge(e0), true)
   let invalid_node = NodeIndex::new(99)
   let invalid_edge = EdgeIndex::new(99)
-  assert_eq(g.node_weight(invalid_node), None)
-  assert_eq(g.edge_weight(invalid_edge), None)
+  assert_true(g.node_weight(invalid_node) is None)
+  assert_true(g.edge_weight(invalid_edge) is None)
   assert_eq(g.add_edge(n0, invalid_node, 1).value(), -1)
 }
 
@@ -313,7 +313,7 @@ test "dag longest paths reject cycles" {
   assert_eq(distances[b.value()], 3)
   assert_eq(distances[c.value()], 7)
   let _ = g.add_edge(c, a, 1)
-  assert_eq(g.dag_longest_paths(a), None)
+  assert_true(g.dag_longest_paths(a) is None)
 }
 
 ///|
@@ -330,7 +330,10 @@ test "edmonds karp max flow aggregates capacities" {
   let _ = g.add_edge(a, t, 13)
   let _ = g.add_edge(b, t, 10)
 
-  assert_eq(g.max_flow(s, t), Ok(23))
+  match g.max_flow(s, t) {
+    Ok(value) => assert_eq(value, 23)
+    Err(_) => assert_true(false)
+  }
 }
 
 ///|
@@ -340,10 +343,10 @@ test "max flow reports unsupported input" {
   let t = g.add_node("t")
   let _ = g.add_edge(s, t, 1)
   assert_true(g.max_flow(s, t) is Err(_))
-  assert_eq(
-    g.max_flow(NodeIndex::new(99), t),
-    Err("source or sink is out of range"),
-  )
+  match g.max_flow(NodeIndex::new(99), t) {
+    Err(message) => assert_eq(message, "source or sink is out of range")
+    Ok(_) => assert_true(false)
+  }
 }
 
 ///|
@@ -362,7 +365,7 @@ test "shortest path reconstructs node sequence" {
   assert_eq(path[0].value(), a.value())
   assert_eq(path[1].value(), b.value())
   assert_eq(path[2].value(), c.value())
-  assert_eq(g.shortest_path(c, NodeIndex::new(99)), None)
+  assert_true(g.shortest_path(c, NodeIndex::new(99)) is None)
 }
 
 ///|
@@ -408,7 +411,7 @@ test "eulerian trail uses every directed edge exactly once" {
   let trail = g.eulerian_trail().unwrap()
   assert_eq(trail.length(), 4)
   assert_eq(trail[0].value(), trail[3].value())
-  assert_eq(g.eulerian_trail_for(NodeIndex::new(99)), None)
+  assert_true(g.eulerian_trail_for(NodeIndex::new(99)) is None)
 }
 
 ///|
@@ -433,4 +436,330 @@ test "prim returns a minimum spanning forest" {
   assert_true(g.contains_edge(e0))
   assert_true(g.contains_edge(e2))
   assert_true(g.contains_edge(e3))
+}
+
+///|
+test "graph statistics distances and bipartite boundaries" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("A")
+  let b = g.add_node("B")
+  let c = g.add_node("C")
+  let d = g.add_node("D")
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(c, c, 1)
+  let stats = g.stats()
+  assert_eq(stats.node_count(), 4)
+  assert_eq(stats.edge_count(), 3)
+  assert_eq(stats.self_loops(), 1)
+  assert_eq(stats.isolated_nodes(), 1)
+  assert_eq(g.bfs_distances(a)[c.value()], 2)
+  assert_eq(g.bfs_distances(a)[d.value()], 2147483647)
+  assert_eq(g.density_scaled(), 250000)
+  assert_eq(g.is_bipartite(), false)
+  assert_eq(g.has_self_loop(), true)
+}
+
+///|
+test "undirected graph statistics and degree histogram" {
+  let g : Graph[Int, Int] = Graph::new(directed=false)
+  let a = g.add_node(0)
+  let b = g.add_node(1)
+  let c = g.add_node(2)
+  let d = g.add_node(3)
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(c, d, 1)
+  let histogram = g.degree_histogram()
+  assert_eq(histogram[1], 2)
+  assert_eq(histogram[2], 2)
+  assert_eq(g.is_bipartite(), true)
+  assert_eq(g.density_scaled(), 500000)
+}
+
+///|
+test "transpose induced subgraph and edge list preserve weights" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("A")
+  let b = g.add_node("B")
+  let c = g.add_node("C")
+  let _ = g.add_edge(a, b, 7)
+  let _ = g.add_edge(b, c, 9)
+  let reversed = g.transpose()
+  assert_eq(reversed.has_edge(b, a), true)
+  assert_eq(reversed.has_edge(c, b), true)
+  let sub = g.induced_subgraph([a, b])
+  assert_eq(sub.node_count(), 2)
+  assert_eq(sub.edge_count(), 1)
+  assert_eq(sub.original_nodes().length(), 2)
+  let edges = g.edge_list()
+  assert_eq(edges.length(), 2)
+  let weighted = g.weighted_edge_list()
+  assert_eq(weighted[0].2, 7)
+  assert_eq(weighted[1].2, 9)
+}
+
+///|
+test "pagerank and ranking are deterministic" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("hub")
+  let b = g.add_node("left")
+  let c = g.add_node("right")
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(a, c, 1)
+  let _ = g.add_edge(b, c, 1)
+  let scores = g.pagerank_scaled(iterations=30)
+  let total = scores[0] + scores[1] + scores[2]
+  assert_true(total >= 999990 && total <= 1000010)
+  let order = g.pagerank_order(iterations=30)
+  assert_eq(order[2].value(), c.value())
+}
+
+///|
+test "triangle and k core analysis handles sparse boundaries" {
+  let g : Graph[Int, Int] = Graph::new(directed=false)
+  let a = g.add_node(0)
+  let b = g.add_node(1)
+  let c = g.add_node(2)
+  let d = g.add_node(3)
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(c, a, 1)
+  let _ = g.add_edge(c, d, 1)
+  assert_eq(g.triangle_count(), 1)
+  assert_eq(g.local_clustering_scaled(a), 1000000)
+  let cores = g.k_core_numbers()
+  assert_eq(cores[a.value()], 2)
+  assert_eq(cores[d.value()], 1)
+  assert_eq(g.k_core(2).length(), 3)
+  assert_eq(g.k_core(0).length(), 4)
+}
+
+///|
+test "dependency planner produces critical path and rejects invalid plans" {
+  let tasks = [
+    Task::new("fetch", 2),
+    Task::new("parse", 3),
+    Task::new("compile", 5),
+    Task::new("package", 2),
+  ]
+  let deps = [[], [0], [1], [2]]
+  let graph = build_dependency_graph(tasks, deps).unwrap()
+  let plan = schedule_tasks(graph).unwrap()
+  assert_eq(plan.makespan(), 12)
+  assert_eq(plan.finish_times()[3], 12)
+  assert_eq(plan.order().length(), 4)
+  let cyclic = build_dependency_graph([Task::new("a", 1), Task::new("b", 1)], [
+    [1],
+    [0],
+  ]).unwrap()
+  match schedule_tasks(cyclic) {
+    Err(message) => assert_eq(message, "dependency graph contains a cycle")
+    Ok(_) => assert_true(false)
+  }
+  match build_dependency_graph([Task::new("bad", -1)], [[]]) {
+    Err(message) => assert_eq(message, "task duration cannot be negative")
+    Ok(_) => assert_true(false)
+  }
+}
+
+///|
+test "dependency planner schedules parallel branches" {
+  let tasks = [
+    Task::new("root", 2),
+    Task::new("lint", 3),
+    Task::new("tests", 5),
+    Task::new("release", 1),
+  ]
+  let graph = build_dependency_graph(tasks, [[], [0], [0], [1, 2]]).unwrap()
+  let plan = schedule_tasks(graph).unwrap()
+  assert_eq(plan.makespan(), 8)
+  assert_eq(plan.start_times()[1], 2)
+  assert_eq(plan.start_times()[2], 2)
+  assert_eq(plan.start_times()[3], 7)
+}
+
+///|
+test "condensation graph contracts strongly connected components" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let c = g.add_node("c")
+  let d = g.add_node("d")
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, a, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(c, d, 1)
+  let _ = g.add_edge(d, c, 1)
+  let condensation = g.condensation()
+  assert_eq(condensation.component_count(), 2)
+  assert_eq(condensation.graph().edge_count(), 1)
+  assert_eq(condensation.component_of(a), condensation.component_of(b))
+  assert_eq(condensation.component_of(a) != condensation.component_of(c), true)
+  assert_eq(condensation.components().length(), 2)
+}
+
+///|
+test "minimum cut reports reachable side and capacity" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let s = g.add_node("s")
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let t = g.add_node("t")
+  let _ = g.add_edge(s, a, 3)
+  let _ = g.add_edge(s, b, 2)
+  let _ = g.add_edge(a, t, 2)
+  let _ = g.add_edge(b, t, 2)
+  let _ = g.add_edge(a, b, 1)
+  let cut = g.min_cut(s, t).unwrap()
+  assert_eq(cut.value(), 4)
+  assert_true(cut.source_side().contains(s))
+  assert_true(!cut.source_side().contains(t))
+  assert_eq(cut.cut_edges().length(), 2)
+}
+
+///|
+test "network metrics handle paths, isolated nodes, and reciprocity" {
+  let g : Graph[Int, Int] = Graph::new(directed=true)
+  let a = g.add_node(0)
+  let b = g.add_node(1)
+  let c = g.add_node(2)
+  let d = g.add_node(3)
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(c, b, 1)
+  let distances = g.average_shortest_path_scaled()
+  assert_true(distances > 1200000 && distances < 1400000)
+  assert_eq(g.diameter(), 2)
+  let centrality = g.degree_centrality_scaled()
+  assert_eq(centrality[b.value()], 666666)
+  assert_eq(g.bfs_distances(d)[d.value()], 0)
+  assert_eq(g.reciprocity_scaled(), 666666)
+  assert_eq(g.component_sizes().length(), 2)
+  assert_eq(g.component_sizes()[0], 3)
+  assert_eq(g.component_sizes()[1], 1)
+}
+
+///|
+test "transitive reduction keeps only necessary dependency edges" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let c = g.add_node("c")
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let _ = g.add_edge(a, c, 1)
+  let reduced = g.transitive_reduction().unwrap()
+  assert_eq(reduced.edge_count(), 2)
+  assert_eq(reduced.has_edge(a, b), true)
+  assert_eq(reduced.has_edge(b, c), true)
+  assert_eq(reduced.has_edge(a, c), false)
+  match g.count_paths(a, c) {
+    Ok(value) => assert_eq(value, 2)
+    Err(_) => assert_true(false)
+  }
+  let _ = g.add_edge(c, a, 1)
+  assert_true(g.transitive_reduction() is Err(_))
+  assert_true(g.count_paths(a, c) is Err(_))
+}
+
+///|
+test "simple graph constraints detect parallel edges and loops" {
+  let g : Graph[Int, Int] = Graph::new(directed=true)
+  let a = g.add_node(0)
+  let b = g.add_node(1)
+  let _ = g.add_edge(a, b, 1)
+  assert_eq(g.edge_multiplicity(a, b), 1)
+  assert_eq(g.is_simple(), true)
+  let _ = g.add_edge(a, b, 2)
+  assert_eq(g.edge_multiplicity(a, b), 2)
+  assert_eq(g.has_parallel_edges(), true)
+  assert_eq(g.is_simple(), false)
+  let _ = g.add_edge(b, b, 3)
+  assert_eq(g.has_self_loop(), true)
+  assert_eq(g.is_simple(), false)
+  match g.validate() {
+    Ok(_) => assert_true(true)
+    Err(_) => assert_true(false)
+  }
+}
+
+///|
+test "tree and forest predicates support disconnected graphs" {
+  let tree : Graph[Int, Int] = Graph::new(directed=false)
+  let a = tree.add_node(0)
+  let b = tree.add_node(1)
+  let c = tree.add_node(2)
+  let d = tree.add_node(3)
+  let _ = tree.add_edge(a, b, 1)
+  let _ = tree.add_edge(b, c, 1)
+  let _ = tree.add_edge(c, d, 1)
+  assert_eq(tree.is_tree(), true)
+  assert_eq(tree.is_forest(), true)
+  assert_eq(tree.connected_pair_count(), 6)
+  let _ = tree.add_node(4)
+  assert_eq(tree.is_tree(), false)
+  assert_eq(tree.is_forest(), true)
+
+  let cycle : Graph[Int, Int] = Graph::new(directed=false)
+  let x = cycle.add_node(0)
+  let y = cycle.add_node(1)
+  let z = cycle.add_node(2)
+  let _ = cycle.add_edge(x, y, 1)
+  let _ = cycle.add_edge(y, z, 1)
+  let _ = cycle.add_edge(z, x, 1)
+  assert_eq(cycle.is_forest(), false)
+}
+
+///|
+test "routing table reconstructs shortest routes and handles unreachable nodes" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let c = g.add_node("c")
+  let d = g.add_node("d")
+  let _ = g.add_edge(a, b, 2)
+  let _ = g.add_edge(b, c, 3)
+  let _ = g.add_edge(a, c, 9)
+  let table = build_route_table(g, a)
+  assert_eq(table.distance(c), 5)
+  assert_eq(table.route_to(c).length(), 3)
+  assert_eq(table.route_to(c)[1].value(), b.value())
+  assert_true(table.route_to(d).length() == 0)
+}
+
+///|
+test "widest path and multi-source distances support network failover" {
+  let g : Graph[String, Int] = Graph::new(directed=true)
+  let a = g.add_node("a")
+  let b = g.add_node("b")
+  let c = g.add_node("c")
+  let d = g.add_node("d")
+  let _ = g.add_edge(a, b, 4)
+  let _ = g.add_edge(a, c, 7)
+  let _ = g.add_edge(b, d, 5)
+  let _ = g.add_edge(c, d, 3)
+  let capacity = g.widest_path_capacities(a)
+  assert_eq(capacity[d.value()], 4)
+  let distances = g.multi_source_bfs_distances([b, c])
+  assert_eq(distances[a.value()], 2147483647)
+  assert_eq(distances[d.value()], 1)
+  assert_eq(g.k_hop_neighborhood(a, 1).length(), 3)
+}
+
+///|
+test "deterministic walk sampling stays within graph and counts visits" {
+  let g : Graph[Int, Int] = Graph::new(directed=false)
+  let a = g.add_node(0)
+  let b = g.add_node(1)
+  let c = g.add_node(2)
+  let _ = g.add_edge(a, b, 1)
+  let _ = g.add_edge(b, c, 1)
+  let trace = g.random_walk(a, 20, 17)
+  assert_eq(trace.length(), 21)
+  assert_true(trace.unique_nodes().length() >= 2)
+  assert_true(trace.unique_nodes().length() <= 3)
+  assert_eq(trace.visit_counts().length(), 3)
+  assert_eq(trace.return_probability_scaled() >= 0, true)
+  assert_eq(g.random_walk(NodeIndex::new(99), 5, 1).length(), 0)
 }
