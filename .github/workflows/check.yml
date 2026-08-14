@@ -85,6 +85,11 @@ jobs:
         shell: bash
         run: |
           moon fmt
+          # MoonBit 0.10.3 rewrites executable package metadata from
+          # options(is_main: true) to obsolete pkgtype syntax. Restore the
+          # two known metadata files before validating the real diff.
+          git restore -- cmd/demo/moon.pkg cmd/benchmark/moon.pkg
+          git diff -- '*.mbt' '*.mbti'
           git diff --exit-code
           moon info
           git diff --exit-code
