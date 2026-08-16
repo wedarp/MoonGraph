@@ -1,9 +1,5 @@
 name: Check and Test
 
-env:
-  # Pin the toolchain used by the acceptance CI. This release reports moonc 0.10.7.
-  MOONBIT_INSTALL_VERSION: 0.1.20260807
-
 on:
   pull_request:
   push:
@@ -55,6 +51,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
+          export MOONBIT_INSTALL_VERSION=latest
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
@@ -62,6 +59,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          $env:MOONBIT_INSTALL_VERSION = "latest"
           Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
           irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
           "$HOME/.moon/bin" | Out-File -FilePath $env:GITHUB_PATH -Append

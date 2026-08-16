@@ -69,7 +69,7 @@ Expected output includes node and edge counts, a BFS summary, a shortest-path re
 
 ## Development and verification
 
-The workflow follows the MoonBit community check template and pins the verified MoonBit CLI release `0.1.20260807` (moonc 0.10.7) on every run. Pinning keeps acceptance results reproducible instead of depending on a moving `latest` channel.
+The workflow follows the MoonBit community check template and installs the currently available official stable MoonBit toolchain through the `latest` channel. Historical binary archives are not consistently downloadable from the installer service, so the workflow uses the supported channel and records the exact toolchain with `moon version --all`.
 
     moon version --all
     moon update
