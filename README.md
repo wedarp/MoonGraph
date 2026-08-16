@@ -69,11 +69,14 @@ Expected output includes node and edge counts, a BFS summary, a shortest-path re
 
 ## Development and verification
 
-The workflow follows the MoonBit community check template and installs the latest stable MoonBit toolchain on every run. The official stable channel should be used for acceptance validation; the local verification environment currently reports MoonBit 0.10.4.
+The workflow follows the MoonBit community check template and pins the verified MoonBit CLI release `0.1.20260807` (moonc 0.10.7) on every run. Pinning keeps acceptance results reproducible instead of depending on a moving `latest` channel.
 
     moon version --all
     moon update
-    moon fmt --check
+    moon fmt
+    git restore -- cmd/demo/moon.pkg cmd/benchmark/moon.pkg
+    git diff -- '*.mbt' '*.mbti'
+    git diff --exit-code
     moon check --target all --deny-warn
     moon build --target all --deny-warn
     moon test --target all --deny-warn
